@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>開心水族箱 Happy Aquarium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { user-select: none; -webkit-user-select: none; }
+        body { font-family: 'Fredoka One', 'Noto Sans TC', sans-serif; background-color: #081a36; overflow: hidden; margin: 0; padding: 0; }
+        
+        .game-panel {
+            background: linear-gradient(180deg, #3aa0ff 0%, #0d54be 100%);
+            border: 4px solid #b5f0ff;
+            box-shadow: 0 8px 0 #072a5b, inset 0 3px 0 #e1f8ff;
+            border-radius: 22px;
+        }
+        
+        .hud-card {
+            background: rgba(13, 37, 79, 0.75);
+            border: 2px solid #6cd4ff;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 3px 6px rgba(0,0,0,0.3);
+            border-radius: 9999px;
+        }
+
+        /* Referencing Early Flash style buttons */
+        .btn-retro {
+            background: linear-gradient(180deg, #ffe45c 0%, #ff9d00 100%);
+            border: 3px solid #ffffff;
+            box-shadow: 0 5px 0 #b35900, 0 6px 8px rgba(0,0,0,0.4);
+            border-radius: 16px;
+            color: #5c2000;
+            font-weight: 900;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+            transition: transform 0.08s, box-shadow 0.08s, filter 0.15s;
+        }
+        .btn-retro:hover { filter: brightness(1.08); }
+        .btn-retro:active { transform: translateY(4px); box-shadow: 0 1px 0 #b35900, 0 2px 4px rgba(0,0,0,0.4); }
+
+        .btn-pink {
+            background: linear-gradient(180deg, #ff8dae 0%, #ff3b77 100%);
+            border: 3px solid #fff0f5;
+            box-shadow: 0 5px 0 #a30036, 0 6px 8px rgba(0,0,0,0.4);
+            color: #ffffff;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.4);
+        }
+        .btn-blue {
+            background: linear-gradient(180deg, #5ce4ff 0%, #007bf5 100%);
+            border: 3px solid #e1f7ff;
+            box-shadow: 0 5px 0 #004294, 0 6px 8px rgba(0,0,0,0.4);
+            color: #ffffff;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.4);
+        }
+        .btn-green {
+            background: linear-gradient(180deg, #71f55c 0%, #1ea800 100%);
+            border: 3px solid #e3ffe1;
+            box-shadow: 0 5px 0 #0d5e00, 0 6px 8px rgba(0,0,0,0.4);
+            color: #ffffff;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.4);
+        }
+        .btn-purple {
+            background: linear-gradient(180deg, #e37bff 0%, #9013fe 100%);
+            border: 3px solid #fae5ff;
+            box-shadow: 0 5px 0 #520099, 0 6px 8px rgba(0,0,0,0.4);
+            color: #ffffff;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.4);
+        }
+
+        .btn-bottom-nav {
+            background: linear-gradient(180deg, #ffffff 0%, #e0f2fe 60%, #bae6fd 100%);
+            border: 3px solid #ffffff;
+            box-shadow: 0 6px 0 #0284c7, 0 8px 12px rgba(0,0,0,0.35);
+            border-radius: 20px;
+            color: #0369a1;
+            transition: all 0.15s ease;
+        }
+        .btn-bottom-nav:hover { transform: translateY(-3px) scale(1.03); filter: brightness(1.05); }
+        .btn-bottom-nav:active { transform: translateY(3px) scale(0.98); box-shadow: 0 2px 0 #0284c7; }
+
+        .modal-overlay {
+            background: rgba(3, 15, 38, 0.75);
+            backdrop-filter: blur(6px);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 10px; }
+
+        @keyframes gachaRotate {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-12deg) scale(1.1); }
+            75% { transform: rotate(12deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .animate-gacha-shake { animation: gachaRotate 0.6s infinite ease-in-out; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between select-none overflow-hidden">
+
+    <!-- TOP HUD BAR (Matching Screenshot Layout) -->
+    <header class="w-full z-20 px-3 py-2 flex items-center justify-between bg-gradient-to-b from-blue-950/90 via-blue-900/40 to-transparent">
+        
+        <!-- Left: Logo & Player Level -->
+        <div class="flex items-center gap-2">
+            <!-- Game Title Logo Banner -->
+            <div class="flex items-center gap-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 p-1.5 px-3 rounded-full border-2 border-white shadow-lg">
+                <span class="text-xl">⭐</span>
+                <div class="flex flex-col leading-none">
+                    <span class="text-yellow-300 font-black text-sm md:text-base drop-shadow-md">開心水族箱</span>
+                    <span class="text-[9px] text-pink-100 font-extrabold tracking-wider">Happy Aquarium</span>
+                </div>
+            </div>
+
+            <!-- Level Card -->
+            <div class="flex items-center -ml-2">
+                <div class="relative flex items-center justify-center w-11 h-11 bg-gradient-to-br from-yellow-300 to-amber-500 rounded-full border-3 border-white shadow-md text-amber-950 font-black text-sm z-10">
+                    <span id="player-level">Lv.1</span>
+                </div>
+                <div class="hud-card flex flex-col justify-center px-4 py-1 -ml-4 pl-5 min-w-[110px] md:min-w-[140px]">
+                    <div class="w-full bg-blue-950/80 rounded-full h-2.5 border border-cyan-400/50 overflow-hidden mt-0.5">
+                        <div id="player-xp-bar" class="bg-gradient-to-r from-pink-400 to-amber-300 h-full w-0% transition-all duration-300"></div>
+                    </div>
+                    <span id="player-xp-text" class="text-[10px] text-cyan-200 text-center font-bold mt-0.5">0 / 100</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle: Currencies (Coins & Gems) -->
+        <div class="flex items-center gap-2 md:gap-4">
+            <!-- Coins -->
+            <div class="hud-card flex items-center px-3 py-1 gap-2 border-yellow-300/80">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 border-2 border-white flex items-center justify-center text-amber-950 font-black text-xs shadow">💰</div>
+                <span id="player-coins" class="text-yellow-300 font-black text-xs md:text-sm drop-shadow">1,000</span>
+                <button onclick="openShop('fish')" class="w-5 h-5 rounded-full bg-emerald-500 border border-white text-white font-bold text-xs flex items-center justify-center hover:bg-emerald-400">+</button>
+            </div>
+            <!-- Gems -->
+            <div class="hud-card flex items-center px-3 py-1 gap-2 border-cyan-300/80">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-300 to-blue-500 border-2 border-white flex items-center justify-center text-white font-black text-xs shadow">💎</div>
+                <span id="player-gems" class="text-cyan-200 font-black text-xs md:text-sm drop-shadow">20</span>
+                <button onclick="openShop('fish')" class="w-5 h-5 rounded-full bg-emerald-500 border border-white text-white font-bold text-xs flex items-center justify-center hover:bg-emerald-400">+</button>
+            </div>
+        </div>
+
+        <!-- Right: Control Icons & Audio -->
+        <div class="flex items-center gap-1.5 md:gap-2">
+            <button onclick="toggleModal('daily-modal')" class="btn-retro px-2.5 py-1.5 text-xs flex items-center gap-1" title="每日獎勵">
+                <span>🎁</span> <span class="hidden lg:inline">每日獎勵</span>
+            </button>
+            <button onclick="toggleModal('task-modal')" class="btn-retro btn-blue px-2.5 py-1.5 text-xs flex items-center gap-1 relative" title="任務">
+                <span>📜</span> <span class="hidden lg:inline">任務</span>
+                <span id="task-badge" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+            </button>
+            <button onclick="toggleModal('book-modal')" class="btn-retro btn-purple px-2.5 py-1.5 text-xs flex items-center gap-1" title="圖鑑">
+                <span>📖</span> <span class="hidden lg:inline">圖鑑</span>
+            </button>
+            <button onclick="openShop('fish')" class="btn-retro btn-pink px-2.5 py-1.5 text-xs flex items-center gap-1" title="商店">
+                <span>🏪</span> <span class="hidden lg:inline">商店</span>
+            </button>
+            <button id="audio-toggle-btn" onclick="toggleMute()" class="btn-retro btn-blue px-2 py-1.5 text-xs flex items-center justify-center" title="音效開關">
+                <span id="audio-icon">🔊</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- RIGHT SIDEBAR SHORTCUTS (Matching Screenshot Right Side) -->
+    <div class="fixed right-3 top-20 z-20 flex flex-col gap-3">
+        <button onclick="toggleModal('theme-modal')" class="w-13 h-13 rounded-2xl bg-gradient-to-b from-pink-400 to-rose-600 border-2 border-white shadow-xl flex flex-col items-center justify-center text-white hover:scale-105 transition">
+            <span class="text-xl">🪸</span>
+            <span class="text-[10px] font-black text-yellow-200 drop-shadow">活動</span>
+        </button>
+        <button onclick="toggleModal('gacha-modal')" class="w-13 h-13 rounded-2xl bg-gradient-to-b from-purple-400 to-indigo-600 border-2 border-white shadow-xl flex flex-col items-center justify-center text-white hover:scale-105 transition">
+            <span class="text-xl">🎰</span>
+            <span class="text-[10px] font-black text-yellow-200 drop-shadow">扭蛋</span>
+        </button>
+        <button onclick="triggerLimitGift()" class="w-13 h-13 rounded-2xl bg-gradient-to-b from-amber-300 to-orange-500 border-2 border-white shadow-xl flex flex-col items-center justify-center text-white hover:scale-105 transition">
+            <span class="text-xl">🎁</span>
+            <span class="text-[10px] font-black text-white drop-shadow">限時禮包</span>
+        </button>
+    </div>
+
+    <!-- MAIN AQUARIUM CANVAS AREA -->
+    <main class="relative flex-1 w-full h-full overflow-hidden cursor-pointer" id="canvas-container">
+        <canvas id="aquariumCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+        <!-- Fish Interactive Popover -->
+        <div id="fish-popover" class="hidden absolute z-30 bg-slate-900/90 text-white border-2 border-pink-300 p-3 rounded-2xl shadow-2xl pointer-events-none transform -translate-x-1/2 -translate-y-full mb-4 w-48">
+            <div class="flex items-center justify-between border-b border-pink-400/40 pb-1 mb-1">
+                <h4 id="pop-fish-name" class="font-black text-yellow-300 text-sm">粉紅水母</h4>
+                <span id="pop-fish-rarity" class="text-[10px] px-1.5 py-0.5 rounded bg-pink-500/40 text-pink-200 border border-pink-300/50">史詩</span>
+            </div>
+            <div class="text-xs space-y-1 text-cyan-100 font-medium">
+                <p>階段：<span id="pop-fish-stage" class="text-white">幼魚</span></p>
+                <p>狀態：<span id="pop-fish-hunger" class="text-emerald-400">飽足</span></p>
+                <p>產金倒數：<span id="pop-fish-timer" class="text-yellow-200">12s</span></p>
+            </div>
+        </div>
+
+        <!-- Global Action Toast -->
+        <div id="toast-notify" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+            <div class="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white font-black px-6 py-2.5 rounded-full border-2 border-white shadow-2xl text-sm flex items-center gap-2">
+                <span id="toast-icon">✨</span>
+                <span id="toast-text">餵食成功！經驗值 +5</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- BOTTOM MAIN NAV BAR (Matching Screenshot Bottom Row) -->
+    <footer class="w-full z-20 px-3 py-3 bg-gradient-to-t from-blue-950/95 via-blue-900/60 to-transparent flex items-center justify-center gap-3 md:gap-6">
+        <button onclick="openShop('fish')" class="btn-bottom-nav px-4 md:px-6 py-2 flex flex-col items-center min-w-[75px] md:min-w-[95px]">
+            <span class="text-2xl md:text-3xl">🐟</span>
+            <span class="text-xs md:text-sm font-black text-sky-900 mt-0.5">買魚</span>
+        </button>
+        <button onclick="openShop('decor')" class="btn-bottom-nav px-4 md:px-6 py-2 flex flex-col items-center min-w-[75px] md:min-w-[95px]">
+            <span class="text-2xl md:text-3xl">🪸</span>
+            <span class="text-xs md:text-sm font-black text-rose-700 mt-0.5">裝飾</span>
+        </button>
+        <button onclick="toggleModal('tank-modal')" class="btn-bottom-nav px-4 md:px-6 py-2 flex flex-col items-center min-w-[75px] md:min-w-[95px]">
+            <span class="text-2xl md:text-3xl">🏰</span>
+            <span class="text-xs md:text-sm font-black text-indigo-900 mt-0.5">魚缸升級</span>
+        </button>
+        <button onclick="toggleModal('breed-modal')" class="btn-bottom-nav px-4 md:px-6 py-2 flex flex-col items-center min-w-[75px] md:min-w-[95px]">
+            <span class="text-2xl md:text-3xl">💖</span>
+            <span class="text-xs md:text-sm font-black text-pink-700 mt-0.5">繁殖</span>
+        </button>
+        <button onclick="toggleModal('theme-modal')" class="btn-bottom-nav px-4 md:px-6 py-2 flex flex-col items-center min-w-[75px] md:min-w-[95px]">
+            <span class="text-2xl md:text-3xl">🎨</span>
+            <span class="text-xs md:text-sm font-black text-purple-900 mt-0.5">切換魚缸</span>
+        </button>
+    </footer>
+
+    <!-- ==================== MODALS & WINDOWS ==================== -->
+
+    <!-- GACHA / LUCKY MACHINE MODAL -->
+    <div id="gacha-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-md flex flex-col overflow-hidden text-white p-6 space-y-4 text-center">
+            <div class="flex justify-between items-center border-b border-cyan-300/40 pb-2">
+                <h3 class="text-xl font-black text-yellow-300">🎰 神秘夢幻扭蛋機</h3>
+                <button onclick="toggleModal('gacha-modal')" class="btn-retro btn-pink px-2.5 py-0.5 text-xs">✕</button>
+            </div>
+            
+            <div id="gacha-display" class="py-4 flex justify-center items-center">
+                <div id="gacha-ball" class="w-36 h-36 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-300 border-4 border-white flex items-center justify-center text-6xl shadow-2xl">
+                    🎁
+                </div>
+            </div>
+
+            <p class="text-xs text-cyan-100">抽取限定傳說魚種：賽博霓虹魚、銀河水母、至尊金龍魚！</p>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="playGacha('coin')" class="btn-retro py-3 text-xs md:text-sm flex flex-col items-center justify-center">
+                    <span>普通扭蛋</span>
+                    <span class="text-yellow-950 font-extrabold mt-1">💰 500 金幣</span>
+                </button>
+                <button onclick="playGacha('gem')" class="btn-retro btn-purple py-3 text-xs md:text-sm flex flex-col items-center justify-center">
+                    <span>豪華扭蛋</span>
+                    <span class="text-white font-extrabold mt-1">💎 10 鑽石</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BREEDING MODAL -->
+    <div id="breed-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden text-white p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-cyan-400/40 pb-2">
+                <h3 class="text-xl font-black text-yellow-300">💖 親魚繁殖培育</h3>
+                <button onclick="toggleModal('breed-modal')" class="btn-retro btn-pink px-2.5 py-0.5 text-xs">✕</button>
+            </div>
+            <p class="text-xs text-cyan-100">選擇 2 隻完全成熟 (成魚) 的魚兒進行培育，新品種小魚將傳承雙親基因色調！</p>
+
+            <div class="flex justify-around items-center bg-blue-950/60 p-4 rounded-2xl border border-cyan-400/30">
+                <div id="breed-slot-1" onclick="deselectBreedParent(1)" class="w-20 h-20 rounded-2xl bg-blue-900/80 border-2 border-dashed border-pink-300 flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-2xl">🐟</span>
+                    <span class="text-[10px] text-cyan-200">親魚 1</span>
+                </div>
+                <div class="text-3xl text-pink-400 animate-bounce">💖</div>
+                <div id="breed-slot-2" onclick="deselectBreedParent(2)" class="w-20 h-20 rounded-2xl bg-blue-900/80 border-2 border-dashed border-pink-300 flex flex-col items-center justify-center cursor-pointer">
+                    <span class="text-2xl">🐟</span>
+                    <span class="text-[10px] text-cyan-200">親魚 2</span>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar bg-blue-950/40 p-2.5 rounded-xl">
+                <h4 class="text-xs font-bold text-yellow-300 mb-2">成熟成魚清單：</h4>
+                <div id="breed-fish-list" class="grid grid-cols-2 gap-2">
+                    <!-- Injected JS -->
+                </div>
+            </div>
+
+            <button onclick="startBreedingProcess()" class="btn-retro btn-pink w-full py-2.5 text-sm">開始愛心培育 (💰 300)</button>
+        </div>
+    </div>
+
+    <!-- THEME SWITCHER MODAL -->
+    <div id="theme-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-md flex flex-col overflow-hidden text-white p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-cyan-400/40 pb-2">
+                <h3 class="text-xl font-black text-yellow-300">🎨 水族箱主題背景</h3>
+                <button onclick="toggleModal('theme-modal')" class="btn-retro btn-pink px-2.5 py-0.5 text-xs">✕</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="setAquariumTheme('default')" class="bg-blue-950/80 hover:bg-blue-900 p-3 rounded-2xl border border-cyan-400 text-left">
+                    <div class="font-bold text-sm text-pink-300">🌸 粉藍夢幻海底</div>
+                    <div class="text-[10px] text-cyan-200">經典童趣繽紛世界</div>
+                </button>
+                <button onclick="setAquariumTheme('coral')" class="bg-blue-950/80 hover:bg-blue-900 p-3 rounded-2xl border border-cyan-400 text-left">
+                    <div class="font-bold text-sm text-yellow-300">🪸 陽光暖彩珊瑚</div>
+                    <div class="text-[10px] text-cyan-200">明亮清爽暖色海域</div>
+                </button>
+                <button onclick="setAquariumTheme('cyber')" class="bg-blue-950/80 hover:bg-blue-900 p-3 rounded-2xl border border-cyan-400 text-left">
+                    <div class="font-bold text-sm text-fuchsia-300">⚡ 賽博霓虹電音</div>
+                    <div class="text-[10px] text-cyan-200">炫彩未來派光影</div>
+                </button>
+                <button onclick="setAquariumTheme('christmas')" class="bg-blue-950/80 hover:bg-blue-900 p-3 rounded-2xl border border-cyan-400 text-left">
+                    <div class="font-bold text-sm text-emerald-300">🎄 聖誕冰雪慶典</div>
+                    <div class="text-[10px] text-cyan-200">漂浮璀璨水底雪花</div>
+                </button>
+                <button onclick="setAquariumTheme('halloween')" class="bg-blue-950/80 hover:bg-blue-900 p-3 rounded-2xl border border-cyan-400 text-left">
+                    <div class="font-bold text-sm text-amber-400">🎃 萬聖鬼魅南瓜</div>
+                    <div class="text-[10px] text-cyan-200">神秘幽紫夜色氛圍</div>
+                </button>
+                <button onclick="setAquariumTheme('summer')" class="bg-blue-950/80 hover:bg-blue-900 p-3 rounded-2xl border border-cyan-400 text-left">
+                    <div class="font-bold text-sm text-cyan-300">🏖️ 夏日金黃沙灘</div>
+                    <div class="text-[10px] text-cyan-200">蔚藍陽光與金色沙灘</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOP MODAL -->
+    <div id="shop-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden text-white">
+            <div class="px-6 py-3 border-b-2 border-cyan-400/40 flex justify-between items-center bg-blue-950/40">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🏬</span>
+                    <h2 class="text-xl font-black text-yellow-300">開心水族商店</h2>
+                </div>
+                <button onclick="toggleModal('shop-modal')" class="btn-retro btn-pink px-3 py-1 text-xs">✕ 關閉</button>
+            </div>
+            <div class="flex gap-2 px-6 pt-3 bg-blue-950/40 border-b border-cyan-500/20">
+                <button id="shop-tab-fish" onclick="switchShopTab('fish')" class="px-5 py-2 font-bold rounded-t-lg bg-pink-500 text-white">可愛魚種</button>
+                <button id="shop-tab-decor" onclick="switchShopTab('decor')" class="px-5 py-2 font-bold rounded-t-lg bg-blue-900 text-cyan-200">造景裝飾</button>
+            </div>
+            <div id="shop-items-container" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto custom-scrollbar flex-1">
+            </div>
+        </div>
+    </div>
+
+    <!-- FISHBOOK MODAL -->
+    <div id="book-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden text-white">
+            <div class="px-6 py-3 border-b-2 border-cyan-400/40 flex justify-between items-center bg-blue-950/40">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📖</span>
+                    <h2 class="text-xl font-black text-yellow-300">海洋生物百科圖鑑</h2>
+                </div>
+                <button onclick="toggleModal('book-modal')" class="btn-retro btn-pink px-3 py-1 text-xs">✕ 關閉</button>
+            </div>
+            <div id="book-items-container" class="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto custom-scrollbar flex-1">
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTS & TASKS MODAL -->
+    <div id="task-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-xl max-h-[80vh] flex flex-col overflow-hidden text-white">
+            <div class="px-6 py-3 border-b-2 border-cyan-400/40 flex justify-between items-center bg-blue-950/40">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📜</span>
+                    <h2 class="text-xl font-black text-yellow-300">每日養殖任務</h2>
+                </div>
+                <button onclick="toggleModal('task-modal')" class="btn-retro btn-pink px-3 py-1 text-xs">✕ 關閉</button>
+            </div>
+            <div id="task-list-container" class="p-6 space-y-3 overflow-y-auto custom-scrollbar flex-1">
+            </div>
+        </div>
+    </div>
+
+    <!-- DAILY REWARD MODAL -->
+    <div id="daily-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-md flex flex-col overflow-hidden text-white text-center p-6 space-y-4">
+            <div class="text-5xl animate-bounce">🎁</div>
+            <h2 class="text-2xl font-black text-yellow-300">每日簽到好禮</h2>
+            <p class="text-xs text-cyan-100">每天登入水族箱即可領取豐富獎勵！</p>
+            <div class="bg-blue-950/60 p-4 rounded-2xl border border-cyan-400/30 flex justify-around items-center">
+                <div class="text-center">
+                    <div class="text-3xl">💰</div>
+                    <div class="text-yellow-300 font-bold">+500 金幣</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl">💎</div>
+                    <div class="text-cyan-300 font-bold">+5 鑽石</div>
+                </div>
+            </div>
+            <button onclick="claimDailyReward()" class="btn-retro btn-pink w-full py-3 text-lg">領取今日簽到禮</button>
+        </div>
+    </div>
+
+    <!-- TANK EXPANSION MODAL -->
+    <div id="tank-modal" class="hidden fixed inset-0 z-40 modal-overlay flex items-center justify-center p-4">
+        <div class="game-panel w-full max-w-md flex flex-col overflow-hidden text-white p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-cyan-400/30 pb-2">
+                <h3 class="text-xl font-black text-yellow-300">🏰 魚缸擴建與造型</h3>
+                <button onclick="toggleModal('tank-modal')" class="btn-retro btn-pink px-2.5 py-0.5 text-xs">✕</button>
+            </div>
+            <div class="space-y-2 text-sm text-cyan-100">
+                <p>當前魚缸容量：<span id="tank-capacity-text" class="text-yellow-300 font-bold">5 / 8 隻</span></p>
+                <p>擴建後可增容：<span class="text-emerald-300 font-bold">+2 隻上限</span></p>
+                <p>升級費用：<span id="tank-upgrade-cost" class="text-yellow-300 font-bold">💰 1,000</span></p>
+            </div>
+            <button onclick="upgradeTankCapacity()" class="btn-retro btn-green w-full py-2.5 text-sm">確認升級魚缸容量</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT ENGINE -->
+    <script>
+        /* ==========================================================================
+           1. AUDIO SYNTHESIZER & MUTE CONTROL (Web Audio API)
+           ========================================================================== */
+        const AudioFX = {
+            ctx: null,
+            muted: false,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            toggleMute() {
+                this.muted = !this.muted;
+                document.getElementById('audio-icon').innerText = this.muted ? "🔇" : "🔊";
+                GameState.save();
+            },
+            playBubble() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(750, this.ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            },
+            playCoin() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            },
+            playBuy() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.08);
+                osc.frequency.setValueAtTime(783.99, now + 0.16);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            },
+            playFanfare() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.18, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.3);
+                });
+            }
+        };
+
+        function toggleMute() { AudioFX.toggleMute(); }
+
+        /* ==========================================================================
+           2. SPECIES & DECOR SPECS (Includes Reference Screenshot Species)
+           ========================================================================== */
+        const FISH_SPECIES = [
+            { id: 1, name: "黃金小丑魚", rarity: "Common", price: 100, coinRate: 15, growTime: 15, color: "#ff9900", eyeColor: "#000", desc: "經典可愛小丑魚！" },
+            { id: 2, name: "藍色熱帶魚", rarity: "Common", price: 150, coinRate: 20, growTime: 20, color: "#0099ff", eyeColor: "#000", desc: "蔚藍光澤，游動優雅。" },
+            { id: 3, name: "粉紅水母", rarity: "Epic", price: 2500, coinRate: 150, growTime: 60, color: "#ff8dae", bow: true, jellyfish: true, eyeColor: "#000", desc: "帶著可愛蝴蝶結的粉紅水母。" },
+            { id: 4, name: "圓滾滾河豚", rarity: "Rare", price: 600, coinRate: 45, growTime: 40, color: "#7dd3fc", puffer: true, eyeColor: "#000", desc: "隨時鼓起臉頰的治癒河豚。" },
+            { id: 5, name: "粉紅愛心魚", rarity: "Common", price: 200, coinRate: 25, growTime: 25, color: "#ff66aa", heartTail: true, eyeColor: "#000", desc: "尾巴像一顆愛心。" },
+            { id: 6, name: "紫粉獨角鯨", rarity: "Legendary", price: 12000, gemPrice: 50, coinRate: 850, growTime: 180, color: "#c084fc", narwhal: true, eyeColor: "#000", desc: "頭頂擁有閃亮獨角的鯨魚。" },
+            { id: 7, name: "閃亮星星魚", rarity: "Rare", price: 800, coinRate: 60, growTime: 50, color: "#fef08a", starTail: true, eyeColor: "#000", desc: "帶著夢幻星光。" },
+            { id: 8, name: "珍珠粉紅魚", rarity: "Rare", price: 1000, coinRate: 75, growTime: 55, color: "#fbcfe8", bow: true, eyeColor: "#000", desc: "頭頂蝴蝶結的小金魚。" },
+            { id: 9, name: "熊貓斑點魚", rarity: "Rare", price: 1200, coinRate: 90, growTime: 65, color: "#ffffff", panda: true, eyeColor: "#000", desc: "黑白相間的熊貓魚。" },
+            { id: 10, name: "粉嫩海馬", rarity: "Epic", price: 3500, coinRate: 220, growTime: 90, color: "#f472b6", seahorse: true, eyeColor: "#000", desc: "夢幻直立游泳的海馬。" },
+            { id: 11, name: "微笑小海龜", rarity: "Epic", price: 4500, coinRate: 300, growTime: 100, color: "#fef08a", turtle: true, eyeColor: "#000", desc: "性格親切溫和的小海龜。" },
+            { id: 12, name: "藍斑粉紅魟魚", rarity: "Legendary", price: 8000, gemPrice: 35, coinRate: 600, growTime: 140, color: "#93c5fd", ray: true, eyeColor: "#000", desc: "在海底如飛毯般滑行。" },
+            { id: 13, name: "光輝天翅魚", rarity: "Legendary", price: 15000, gemPrice: 70, coinRate: 1200, growTime: 200, color: "#fbcfe8", halo: true, eyeColor: "#000", desc: "頭頂天光環的天使魚。" },
+            
+            // Mythic Gacha Fishes
+            { id: 14, name: "至尊帝王金龍魚", rarity: "Mythic", price: 50000, gachaOnly: true, coinRate: 3500, growTime: 250, color: "#ffd700", dragon: true, eyeColor: "#ff0000", desc: "扭蛋限定！金光閃閃的帝王魚。" },
+            { id: 15, name: "銀河星空水母", rarity: "Mythic", price: 60000, gachaOnly: true, coinRate: 4200, growTime: 250, color: "#8a2be2", galaxy: true, eyeColor: "#00ffff", desc: "全身綻放浩瀚星雲光芒。" }
+        ];
+
+        const DECOR_ITEMS = [
+            { id: 'd1', name: "粉紅珊瑚叢", price: 300, type: "coral", color: "#ff6699", width: 90, height: 100 },
+            { id: 'd2', name: "翠綠海底草", price: 150, type: "seaweed", color: "#34d399", width: 60, height: 120 },
+            { id: 'd3', name: "黃金寶箱", price: 800, type: "chest", color: "#f59e0b", width: 90, height: 75 },
+            { id: 'd4', name: "粉紅夢幻城堡", price: 2500, type: "castle", color: "#f472b6", width: 140, height: 150 },
+            { id: 'd5', name: "閃亮珍珠貝殼", price: 1200, type: "clam", color: "#fda4af", width: 85, height: 80 }
+        ];
+
+        /* ==========================================================================
+           3. GAME STATE ENGINE & LOCALSTORAGE
+           ========================================================================== */
+        const GameState = {
+            coins: 86540,
+            gems: 1280,
+            level: 25,
+            xp: 12680,
+            xpNext: 18000,
+            tankCapacity: 12,
+            theme: "default",
+            lastDailyClaim: "",
+            fishes: [],
+            decors: [],
+            unlockedBook: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+            tasks: [
+                { id: 1, title: "餵食魚兒 3 次", target: 3, current: 0, rewardCoins: 300, rewardXP: 50, done: false },
+                { id: 2, title: "收集 10 枚金幣", target: 10, current: 0, rewardCoins: 500, rewardXP: 80, done: false },
+                { id: 3, title: "購買或扭蛋獲得 1 隻新魚", target: 1, current: 0, rewardCoins: 800, rewardXP: 100, done: false }
+            ],
+
+            save() {
+                localStorage.setItem('happy_aquarium_ref_save', JSON.stringify({
+                    coins: this.coins,
+                    gems: this.gems,
+                    level: this.level,
+                    xp: this.xp,
+                    xpNext: this.xpNext,
+                    tankCapacity: this.tankCapacity,
+                    theme: this.theme,
+                    muted: AudioFX.muted,
+                    lastDailyClaim: this.lastDailyClaim,
+                    unlockedBook: this.unlockedBook,
+                    tasks: this.tasks,
+                    fishes: this.fishes.map(f => ({
+                        speciesId: f.speciesId,
+                        x: f.x,
+                        y: f.y,
+                        stage: f.stage,
+                        growProgress: f.growProgress,
+                        hunger: f.hunger,
+                        coinTimer: f.coinTimer,
+                        customColor: f.customColor
+                    })),
+                    decors: this.decors.map(d => ({ decorId: d.decorId, x: d.x, y: d.y }))
+                }));
+            },
+
+            load() {
+                const dataStr = localStorage.getItem('happy_aquarium_ref_save');
+                if (dataStr) {
+                    try {
+                        const data = JSON.parse(dataStr);
+                        this.coins = data.coins ?? 86540;
+                        this.gems = data.gems ?? 1280;
+                        this.level = data.level ?? 25;
+                        this.xp = data.xp ?? 12680;
+                        this.xpNext = data.xpNext ?? 18000;
+                        this.tankCapacity = data.tankCapacity ?? 12;
+                        this.theme = data.theme ?? "default";
+                        AudioFX.muted = data.muted ?? false;
+                        document.getElementById('audio-icon').innerText = AudioFX.muted ? "🔇" : "🔊";
+                        this.lastDailyClaim = data.lastDailyClaim ?? "";
+                        this.unlockedBook = data.unlockedBook ?? [1, 2, 3];
+                        if (data.tasks) this.tasks = data.tasks;
+                        if (data.fishes) this.fishes = data.fishes.map(fd => new Fish(fd.speciesId, fd.x, fd.y, fd));
+                        if (data.decors) this.decors = data.decors.map(dd => new Decor(dd.decorId, dd.x, dd.y));
+                    } catch (e) {
+                        console.error("Failed to load save", e);
+                    }
+                }
+                
+                // If new game, populate with cute fishes as seen in the reference screenshot!
+                if (this.fishes.length === 0) {
+                    const presetIds = [3, 1, 4, 6, 8, 9, 5, 7, 10, 11, 12, 13];
+                    presetIds.forEach((id, idx) => {
+                        this.fishes.push(new Fish(id, 150 + (idx % 4) * 180, 150 + Math.floor(idx / 4) * 120));
+                    });
+                }
+                if (this.decors.length === 0) {
+                    this.decors.push(new Decor('d4', 680, 0)); // Castle
+                    this.decors.push(new Decor('d3', 120, 0)); // Gold Chest
+                    this.decors.push(new Decor('d5', 820, 0)); // Clam
+                    this.decors.push(new Decor('d1', 260, 0)); // Coral
+                }
+            },
+
+            addXP(amount) {
+                this.xp += amount;
+                if (this.xp >= this.xpNext) {
+                    this.xp -= this.xpNext;
+                    this.level++;
+                    this.xpNext = Math.floor(this.xpNext * 1.4);
+                    AudioFX.playFanfare();
+                    showToast(`🎉 恭喜升級到 Lv.${this.level}！獎勵 5 鑽石！`, "⭐");
+                    this.gems += 5;
+                }
+                updateHUD();
+                this.save();
+            },
+
+            checkTaskProgress(type, val = 1) {
+                let updated = false;
+                this.tasks.forEach(t => {
+                    if (!t.done) {
+                        if (type === 'feed' && t.id === 1) t.current += val;
+                        if (type === 'coin' && t.id === 2) t.current += val;
+                        if (type === 'buy' && t.id === 3) t.current += val;
+                        if (t.current >= t.target) {
+                            t.current = t.target;
+                            updated = true;
+                        }
+                    }
+                });
+                if (updated) {
+                    document.getElementById('task-badge').classList.remove('hidden');
+                    renderTaskList();
+                }
+            }
+        };
+
+        /* ==========================================================================
+           4. CANVAS RENDER ENGINE & ANIMATION
+           ========================================================================== */
+        const canvas = document.getElementById('aquariumCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = 0, height = 0;
+
+        function resizeCanvas() {
+            width = canvas.width = canvas.parentElement.clientWidth;
+            height = canvas.height = canvas.parentElement.clientHeight;
+            GameState.decors.forEach(d => d.y = height - d.height - 35);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        let bubbles = [];
+        let foodPellets = [];
+        let floatingCoins = [];
+        let clickEffects = [];
+        let randomSeaEvents = [];
+        let particles = [];
+
+        // Random Event Generator (Chest / Pearl Clam / Turtle)
+        setInterval(() => {
+            if (randomSeaEvents.length < 2 && Math.random() < 0.65) {
+                const types = ['chest', 'pearl', 'turtle'];
+                const selected = types[Math.floor(Math.random() * types.length)];
+                randomSeaEvents.push({
+                    type: selected,
+                    x: Math.random() * (width - 200) + 100,
+                    y: selected === 'turtle' ? Math.random() * (height - 300) + 150 : height - 100,
+                    speed: selected === 'turtle' ? (Math.random() > 0.5 ? 1.2 : -1.2) : 0,
+                    life: 30
+                });
+            }
+        }, 10000);
+
+        setInterval(() => {
+            if (bubbles.length < 50) {
+                bubbles.push({
+                    x: Math.random() * width,
+                    y: height + 20,
+                    radius: Math.random() * 7 + 3,
+                    speed: Math.random() * 1.6 + 0.6,
+                    swing: Math.random() * 2
+                });
+            }
+        }, 200);
+
+        /* ==========================================================================
+           5. CLASS SPECIFICATIONS (Decor & Cute Vector Fish Renderer)
+           ========================================================================== */
+        class Decor {
+            constructor(decorId, x, y) {
+                this.decorId = decorId;
+                const info = DECOR_ITEMS.find(i => i.id === decorId);
+                this.name = info.name;
+                this.type = info.type;
+                this.color = info.color;
+                this.width = info.width;
+                this.height = info.height;
+                this.x = x;
+                this.y = y || (height - this.height - 35);
+            }
+
+            draw(ctx, time) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                if (this.type === 'seaweed') {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    const wave = Math.sin(time * 0.003 + this.x) * 12;
+                    ctx.moveTo(0, this.height);
+                    ctx.quadraticCurveTo(20 + wave, this.height / 2, wave, 0);
+                    ctx.quadraticCurveTo(10, this.height / 2, this.width, this.height);
+                    ctx.fill();
+                } else if (this.type === 'coral') {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.width/2, this.height - 25, 40, Math.PI, 0);
+                    ctx.arc(this.width/2 - 25, this.height - 50, 22, Math.PI, 0);
+                    ctx.arc(this.width/2 + 25, this.height - 50, 25, Math.PI, 0);
+                    ctx.fill();
+                } else if (this.type === 'chest') {
+                    ctx.fillStyle = "#854d0e"; ctx.fillRect(0, 20, this.width, this.height - 20);
+                    ctx.fillStyle = "#fbbf24"; ctx.fillRect(4, 15, this.width - 8, 12); ctx.fillRect(this.width/2 - 6, 35, 12, 18);
+                } else if (this.type === 'castle') {
+                    ctx.fillStyle = "#f472b6"; ctx.fillRect(15, 30, this.width - 30, this.height - 30);
+                    ctx.fillRect(0, 15, 35, this.height - 15); ctx.fillRect(this.width - 35, 15, 35, this.height - 15);
+                    ctx.fillStyle = "#c084fc";
+                    ctx.beginPath(); ctx.moveTo(-5, 15); ctx.lineTo(17, -15); ctx.lineTo(40, 15); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(this.width - 40, 15); ctx.lineTo(this.width - 17, -15); ctx.lineTo(this.width + 5, 15); ctx.fill();
+                } else if (this.type === 'clam') {
+                    ctx.fillStyle = "#fda4af"; ctx.beginPath(); ctx.arc(this.width/2, this.height - 10, 35, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(this.width/2, this.height - 30, 12, 0, Math.PI * 2); ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class Fish {
+            constructor(speciesId, x, y, savedData = null) {
+                this.speciesId = speciesId;
+                this.info = FISH_SPECIES.find(s => s.id === speciesId);
+                this.x = x || Math.random() * (width - 140) + 70;
+                this.y = y || Math.random() * (height - 240) + 120;
+                
+                this.stage = savedData?.stage || 2; 
+                this.growProgress = savedData?.growProgress || 0; 
+                this.hunger = savedData?.hunger ?? 100; 
+                this.coinTimer = savedData?.coinTimer || this.info.coinRate;
+                this.customColor = savedData?.customColor || null;
+
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 1.2;
+                this.facingRight = this.vx > 0;
+                this.tailAngle = Math.random() * Math.PI * 2;
+            }
+
+            update(dt) {
+                if (this.stage < 3) {
+                    this.growProgress += dt;
+                    if (this.growProgress >= this.info.growTime) {
+                        this.stage++;
+                        this.growProgress = 0;
+                        AudioFX.playFanfare();
+                        showToast(`✨ 你的 ${this.info.name} 長大了！`, "🐟");
+                        clickEffects.push({ x: this.x, y: this.y, text: "Level Up!", life: 1, color: "#fde047" });
+                    }
+                }
+
+                this.hunger = Math.max(0, this.hunger - dt * 1.2);
+
+                if (this.hunger > 30) {
+                    this.coinTimer -= dt;
+                    if (this.coinTimer <= 0) {
+                        this.coinTimer = this.info.coinRate;
+                        floatingCoins.push({
+                            x: this.x,
+                            y: this.y,
+                            val: Math.floor(this.info.price * 0.2) + this.stage * 15,
+                            vy: -0.8,
+                            life: 12
+                        });
+                    }
+                }
+
+                // Swim to food
+                let targetFood = null;
+                if (this.hunger < 75 && foodPellets.length > 0) {
+                    let minDist = 9999;
+                    foodPellets.forEach(p => {
+                        let d = Math.hypot(p.x - this.x, p.y - this.y);
+                        if (d < minDist) { minDist = d; targetFood = p; }
+                    });
+                }
+
+                if (targetFood) {
+                    let dx = targetFood.x - this.x, dy = targetFood.y - this.y;
+                    let angle = Math.atan2(dy, dx);
+                    this.vx = Math.cos(angle) * 2.8;
+                    this.vy = Math.sin(angle) * 2.8;
+                    this.facingRight = this.vx > 0;
+
+                    if (Math.hypot(dx, dy) < 22) {
+                        const index = foodPellets.indexOf(targetFood);
+                        if (index > -1) foodPellets.splice(index, 1);
+                        this.hunger = Math.min(100, this.hunger + 45);
+                        GameState.addXP(5);
+                        GameState.checkTaskProgress('feed', 1);
+                        AudioFX.playBubble();
+                        clickEffects.push({ x: this.x, y: this.y, text: "❤️ 飽足", life: 1, color: "#f472b6" });
+                    }
+                } else {
+                    // FISH SOCIAL INTERACTION (Hearts & Playful Chasing)
+                    if (Math.random() < 0.006) {
+                        GameState.fishes.forEach(other => {
+                            if (other !== this && Math.hypot(other.x - this.x, other.y - this.y) < 70) {
+                                particles.push({ x: (this.x + other.x)/2, y: (this.y + other.y)/2 - 10, text: "💖", life: 1, vy: -0.8 });
+                            }
+                        });
+                    }
+
+                    if (Math.random() < 0.02) {
+                        this.vx = (Math.random() - 0.5) * 2.2;
+                        this.vy = (Math.random() - 0.5) * 1.3;
+                    }
+                }
+
+                // Bounds
+                if (this.x < 70) { this.x = 70; this.vx *= -1; }
+                if (this.x > width - 70) { this.x = width - 70; this.vx *= -1; }
+                if (this.y < 90) { this.y = 90; this.vy *= -1; }
+                if (this.y > height - 110) { this.y = height - 110; this.vy *= -1; }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                if (Math.abs(this.vx) > 0.1) this.facingRight = this.vx > 0;
+                this.tailAngle += 0.2;
+
+                // Rare Light & Particle Trails
+                if (this.info.rarity === 'Legendary' || this.info.rarity === 'Mythic') {
+                    if (Math.random() < 0.35) {
+                        particles.push({
+                            x: this.x + (Math.random() - 0.5) * 25,
+                            y: this.y + (Math.random() - 0.5) * 25,
+                            color: this.info.rarity === 'Mythic' ? "#38bdf8" : "#fef08a",
+                            radius: Math.random() * 3 + 1,
+                            life: 0.6,
+                            vy: -0.5
+                        });
+                    }
+                }
+            }
+
+            // High Quality Vector Canvas Drawing Matching Screenshots!
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                if (!this.facingRight) ctx.scale(-1, 1);
+
+                const scale = 0.7 + (this.stage * 0.22);
+                ctx.scale(scale, scale);
+
+                const color = this.customColor || this.info.color;
+                const wiggle = Math.sin(this.tailAngle) * 8;
+
+                // Glowing Aura for Mythic / Legendary
+                if (this.info.rarity === 'Mythic' || this.info.rarity === 'Legendary') {
+                    ctx.save();
+                    ctx.shadowColor = color; ctx.shadowBlur = 18;
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+                    ctx.beginPath(); ctx.arc(0, 0, 36, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                }
+
+                if (this.info.jellyfish) {
+                    // Cute Pink Jellyfish
+                    ctx.fillStyle = color;
+                    ctx.beginPath(); ctx.arc(0, -10, 26, Math.PI, 0); ctx.fill();
+                    // Bow
+                    if (this.info.bow) {
+                        ctx.fillStyle = "#ff3b77";
+                        ctx.beginPath(); ctx.arc(-12, -30, 6, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(-4, -30, 6, 0, Math.PI * 2); ctx.fill();
+                    }
+                    ctx.strokeStyle = color; ctx.lineWidth = 3.5;
+                    for (let i = -16; i <= 16; i += 8) {
+                        ctx.beginPath(); ctx.moveTo(i, -10);
+                        ctx.quadraticCurveTo(i + wiggle, 15, i, 32); ctx.stroke();
+                    }
+                } else if (this.info.narwhal) {
+                    // Narwhal
+                    ctx.fillStyle = color;
+                    ctx.beginPath(); ctx.ellipse(0, 0, 32, 22, 0, 0, Math.PI * 2); ctx.fill();
+                    // Horn
+                    ctx.fillStyle = "#fef08a";
+                    ctx.beginPath(); ctx.moveTo(25, -10); ctx.lineTo(48, -25); ctx.lineTo(28, -5); ctx.fill();
+                    // Tail
+                    ctx.beginPath(); ctx.moveTo(-28, 0); ctx.lineTo(-45, -16 + wiggle); ctx.lineTo(-45, 16 + wiggle); ctx.fill();
+                } else if (this.info.puffer) {
+                    // Round Puffer Fish
+                    ctx.fillStyle = color;
+                    ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fill();
+                    // Tail
+                    ctx.beginPath(); ctx.moveTo(-22, 0); ctx.lineTo(-38, -12 + wiggle); ctx.lineTo(-38, 12 + wiggle); ctx.fill();
+                } else if (this.info.turtle) {
+                    // Turtle
+                    ctx.fillStyle = "#fef08a"; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#f97316"; ctx.beginPath(); ctx.arc(-4, 0, 16, 0, Math.PI * 2); ctx.fill();
+                    // Head
+                    ctx.fillStyle = "#fef08a"; ctx.beginPath(); ctx.arc(22, -4, 9, 0, Math.PI * 2); ctx.fill();
+                } else {
+                    // Standard Cute Oval Fish
+                    ctx.fillStyle = color;
+                    // Tail
+                    ctx.beginPath();
+                    ctx.moveTo(-20, 0); ctx.lineTo(-42, -18 + wiggle); ctx.lineTo(-32, 0); ctx.lineTo(-42, 18 + wiggle); ctx.fill();
+                    // Body
+                    ctx.beginPath(); ctx.ellipse(0, 0, 28, 20, 0, 0, Math.PI * 2); ctx.fill();
+
+                    if (this.info.panda) {
+                        ctx.fillStyle = "#000000";
+                        ctx.beginPath(); ctx.arc(-8, -6, 8, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(8, 5, 6, 0, Math.PI * 2); ctx.fill();
+                    }
+                    if (this.info.halo) {
+                        ctx.strokeStyle = "#fef08a"; ctx.lineWidth = 3;
+                        ctx.beginPath(); ctx.ellipse(0, -26, 12, 5, 0, 0, Math.PI * 2); ctx.stroke();
+                    }
+                }
+
+                // Cute Big Eyes & Cheeks
+                ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(12, -5, 7, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#000000"; ctx.beginPath(); ctx.arc(14, -5, 3.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "rgba(255, 105, 180, 0.5)"; ctx.beginPath(); ctx.arc(10, 4, 4, 0, Math.PI * 2); ctx.fill();
+
+                if (this.hunger < 40) {
+                    ctx.scale(1 / scale, 1 / scale);
+                    ctx.font = "16px sans-serif"; ctx.fillText("💬 🥩", -10, -35);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        /* ==========================================================================
+           6. MAIN GAME RENDER LOOP & SEASONAL THEMES
+           ========================================================================== */
+        let lastTime = performance.now();
+
+        function gameLoop(time) {
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
+            // Render Themes Matching Screenshots
+            const theme = GameState.theme;
+            let bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+
+            if (theme === 'coral') {
+                bgGrad.addColorStop(0, '#38bdf8'); bgGrad.addColorStop(1, '#0369a1');
+            } else if (theme === 'cyber') {
+                bgGrad.addColorStop(0, '#3b0764'); bgGrad.addColorStop(1, '#090514');
+            } else if (theme === 'christmas') {
+                bgGrad.addColorStop(0, '#064e3b'); bgGrad.addColorStop(1, '#022c22');
+            } else if (theme === 'halloween') {
+                bgGrad.addColorStop(0, '#451a03'); bgGrad.addColorStop(1, '#1a0400');
+            } else if (theme === 'summer') {
+                bgGrad.addColorStop(0, '#0284c7'); bgGrad.addColorStop(1, '#0c4a6e');
+            } else {
+                // Pinkish Blue Dream Ocean (Reference Screenshot)
+                bgGrad.addColorStop(0, '#60a5fa'); bgGrad.addColorStop(0.5, '#3b82f6'); bgGrad.addColorStop(1, '#1d4ed8');
+            }
+            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, width, height);
+
+            // Seabed Floor
+            ctx.fillStyle = theme === 'cyber' ? "#2e1065" : (theme === 'christmas' ? "#047857" : "#1e40af");
+            ctx.beginPath();
+            ctx.moveTo(0, height - 45); ctx.quadraticCurveTo(width / 2, height - 80, width, height - 45);
+            ctx.lineTo(width, height); ctx.lineTo(0, height); ctx.fill();
+
+            // Decors
+            GameState.decors.forEach(d => d.draw(ctx, time));
+
+            // Christmas Snowflake Effects
+            if (theme === 'christmas') {
+                ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+                for (let i = 0; i < 25; i++) {
+                    let sx = (Math.sin(time * 0.001 + i) * width + width) % width;
+                    let sy = (time * 0.06 + i * 35) % height;
+                    ctx.beginPath(); ctx.arc(sx, sy, 3.5, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+
+            // Bubbles
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                let b = bubbles[i];
+                b.y -= b.speed;
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fill();
+                if (b.y < -10) bubbles.splice(i, 1);
+            }
+
+            // Food Pellets
+            ctx.fillStyle = "#f97316";
+            for (let i = foodPellets.length - 1; i >= 0; i--) {
+                let p = foodPellets[i]; p.y += 1.6;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2); ctx.fill();
+                if (p.y > height - 45) foodPellets.splice(i, 1);
+            }
+
+            // Random Marine Events
+            for (let i = randomSeaEvents.length - 1; i >= 0; i--) {
+                let ev = randomSeaEvents[i];
+                ev.x += ev.speed;
+                if (ev.x < 60 || ev.x > width - 60) ev.speed *= -1;
+                ev.life -= dt;
+
+                ctx.save();
+                ctx.translate(ev.x, ev.y);
+                ctx.font = "34px sans-serif";
+                ctx.textAlign = "center";
+                if (ev.type === 'chest') ctx.fillText("👑", 0, 0);
+                else if (ev.type === 'pearl') ctx.fillText("🔮", 0, 0);
+                else if (ev.type === 'turtle') ctx.fillText("🐢", 0, 0);
+                ctx.restore();
+
+                if (ev.life <= 0) randomSeaEvents.splice(i, 1);
+            }
+
+            // Fishes
+            GameState.fishes.forEach(f => {
+                f.update(dt);
+                f.draw(ctx);
+            });
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.y += p.vy || -0.5;
+                p.life -= dt;
+                if (p.text) {
+                    ctx.font = "18px sans-serif"; ctx.fillText(p.text, p.x, p.y);
+                } else {
+                    ctx.fillStyle = p.color || "#fff";
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.radius || 2, 0, Math.PI * 2); ctx.fill();
+                }
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // Floating Coins
+            for (let i = floatingCoins.length - 1; i >= 0; i--) {
+                let c = floatingCoins[i];
+                c.y += Math.sin(time * 0.005) * 0.5;
+                ctx.save(); ctx.translate(c.x, c.y);
+                ctx.fillStyle = "#fbbf24"; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#78350f"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText("💰", 0, 0); ctx.restore();
+            }
+
+            // Click Toast Floating Text
+            for (let i = clickEffects.length - 1; i >= 0; i--) {
+                let e = clickEffects[i];
+                e.y -= 0.8; e.life -= dt;
+                ctx.fillStyle = e.color || "#ffffff";
+                ctx.font = "bold 15px 'Fredoka One', sans-serif";
+                ctx.fillText(e.text, e.x, e.y);
+                if (e.life <= 0) clickEffects.splice(i, 1);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        /* ==========================================================================
+           7. CLICK INTERACTION LOGIC
+           ========================================================================== */
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // 1. Random Event Click
+            for (let i = randomSeaEvents.length - 1; i >= 0; i--) {
+                let ev = randomSeaEvents[i];
+                if (Math.hypot(ev.x - clickX, ev.y - clickY) < 38) {
+                    const bonusCoins = Math.floor(Math.random() * 600) + 400;
+                    GameState.coins += bonusCoins;
+                    GameState.gems += 2;
+                    AudioFX.playFanfare();
+                    showToast(`🎁 點擊海洋驚喜！獲得 ${bonusCoins} 金幣 + 2 鑽石！`, "🌟");
+                    randomSeaEvents.splice(i, 1);
+                    updateHUD();
+                    return;
+                }
+            }
+
+            // 2. Floating Coins Click
+            for (let i = floatingCoins.length - 1; i >= 0; i--) {
+                let c = floatingCoins[i];
+                if (Math.hypot(c.x - clickX, c.y - clickY) < 26) {
+                    GameState.coins += c.val;
+                    GameState.addXP(2);
+                    GameState.checkTaskProgress('coin', 1);
+                    AudioFX.playCoin();
+                    clickEffects.push({ x: c.x, y: c.y, text: `+${c.val} 金幣`, life: 1, color: "#fde047" });
+                    floatingCoins.splice(i, 1);
+                    updateHUD();
+                    return;
+                }
+            }
+
+            // 3. Fish Click
+            let clickedFish = null;
+            GameState.fishes.forEach(f => {
+                if (Math.hypot(f.x - clickX, f.y - clickY) < 38) clickedFish = f;
+            });
+
+            if (clickedFish) {
+                showFishPopover(clickedFish, e.clientX, e.clientY);
+                clickedFish.vx *= -1.5;
+                AudioFX.playBubble();
+                return;
+            } else {
+                hideFishPopover();
+            }
+
+            // 4. Default Feed Pellets
+            foodPellets.push({ x: clickX, y: clickY });
+            AudioFX.playBubble();
+        });
+
+        /* ==========================================================================
+           8. BREEDING & GACHA SYSTEM LOGIC
+           ========================================================================== */
+        let selectedBreedParents = [null, null];
+
+        function renderBreedModal() {
+            const list = document.getElementById('breed-fish-list');
+            list.innerHTML = "";
+            const adults = GameState.fishes.filter(f => f.stage === 3);
+
+            if (adults.length === 0) {
+                list.innerHTML = `<p class="col-span-full text-center text-xs text-cyan-200 py-4">魚缸內尚無完全成熟 (成魚) 的魚兒，請先餵養生長！</p>`;
+                return;
+            }
+
+            adults.forEach(f => {
+                const card = document.createElement('div');
+                card.className = "bg-blue-900/70 p-2 rounded-xl border border-pink-300/40 flex items-center justify-between cursor-pointer hover:bg-pink-500/30";
+                card.innerHTML = `
+                    <div class="text-xs">
+                        <div class="font-bold text-yellow-300">${f.info.name}</div>
+                        <div class="text-[10px] text-pink-200">成魚階段 100%</div>
+                    </div>
+                    <button class="btn-retro btn-pink px-2 py-0.5 text-[10px]">選擇</button>
+                `;
+                card.onclick = () => selectBreedParent(f);
+                list.appendChild(card);
+            });
+        }
+
+        function selectBreedParent(fish) {
+            if (!selectedBreedParents[0]) {
+                selectedBreedParents[0] = fish;
+                document.getElementById('breed-slot-1').innerHTML = `<span class="text-2xl">🐟</span><span class="text-[10px] text-yellow-300 font-bold">${fish.info.name}</span>`;
+            } else if (!selectedBreedParents[1] && selectedBreedParents[0] !== fish) {
+                selectedBreedParents[1] = fish;
+                document.getElementById('breed-slot-2').innerHTML = `<span class="text-2xl">🐟</span><span class="text-[10px] text-yellow-300 font-bold">${fish.info.name}</span>`;
+            }
+        }
+
+        function deselectBreedParent(slotIndex) {
+            selectedBreedParents[slotIndex - 1] = null;
+            document.getElementById(`breed-slot-${slotIndex}`).innerHTML = `<span class="text-2xl">🐟</span><span class="text-[10px] text-cyan-200">親魚 ${slotIndex}</span>`;
+        }
+
+        function startBreedingProcess() {
+            if (!selectedBreedParents[0] || !selectedBreedParents[1]) {
+                showToast("請先選擇 2 隻成熟親魚！", "⚠️");
+                return;
+            }
+            if (GameState.coins < 300) { showToast("金幣不足 300！", "❌"); return; }
+            if (GameState.fishes.length >= GameState.tankCapacity) { showToast("魚缸容量已滿！", "⚠️"); return; }
+
+            GameState.coins -= 300;
+            const childSpecies = Math.random() < 0.5 ? selectedBreedParents[0].speciesId : selectedBreedParents[1].speciesId;
+            const baby = new Fish(childSpecies);
+            baby.customColor = Math.random() < 0.35 ? "#ec4899" : selectedBreedParents[0].info.color;
+            GameState.fishes.push(baby);
+
+            AudioFX.playFanfare();
+            showToast(`💖 培育大成功！產下了遺傳雙親色調的寶寶！`, "🐣");
+            selectedBreedParents = [null, null];
+            deselectBreedParent(1); deselectBreedParent(2);
+            toggleModal('breed-modal');
+            updateHUD(); GameState.save();
+        }
+
+        function playGacha(type) {
+            const cost = type === 'coin' ? 500 : 10;
+            if (type === 'coin' && GameState.coins < cost) { showToast("金幣不足！", "❌"); return; }
+            if (type === 'gem' && GameState.gems < cost) { showToast("鑽石不足！", "❌"); return; }
+            if (GameState.fishes.length >= GameState.tankCapacity) { showToast("魚缸容量已滿！", "⚠️"); return; }
+
+            if (type === 'coin') GameState.coins -= cost;
+            else GameState.gems -= cost;
+
+            const ball = document.getElementById('gacha-ball');
+            ball.classList.add('animate-gacha-shake');
+
+            setTimeout(() => {
+                ball.classList.remove('animate-gacha-shake');
+                let droppedId = 1;
+                const rand = Math.random();
+                if (type === 'gem' && rand < 0.3) {
+                    droppedId = [14, 15][Math.floor(Math.random() * 2)];
+                } else {
+                    droppedId = Math.floor(Math.random() * 10) + 1;
+                }
+
+                const newFish = new Fish(droppedId);
+                GameState.fishes.push(newFish);
+                if (!GameState.unlockedBook.includes(droppedId)) GameState.unlockedBook.push(droppedId);
+
+                AudioFX.playFanfare();
+                showToast(`🎰 扭蛋抽出：${newFish.info.name}！`, "🎉");
+                GameState.checkTaskProgress('buy', 1);
+                updateHUD(); GameState.save();
+            }, 800);
+        }
+
+        function triggerLimitGift() {
+            GameState.coins += 2000; GameState.gems += 20;
+            AudioFX.playFanfare();
+            showToast("🎁 成功領取限時禮包！金幣 +2000, 鑽石 +20！", "🌟");
+            updateHUD(); GameState.save();
+        }
+
+        /* ==========================================================================
+           9. SYSTEM HUD & MODAL HELPERS
+           ========================================================================== */
+        function updateHUD() {
+            document.getElementById('player-level').innerText = `Lv.${GameState.level}`;
+            document.getElementById('player-coins').innerText = GameState.coins.toLocaleString();
+            document.getElementById('player-gems').innerText = GameState.gems.toLocaleString();
+            document.getElementById('player-xp-text').innerText = `${GameState.xp} / ${GameState.xpNext}`;
+            document.getElementById('player-xp-bar').style.width = `${Math.min(100, (GameState.xp / GameState.xpNext) * 100)}%`;
+            document.getElementById('tank-capacity-text').innerText = `${GameState.fishes.length} / ${GameState.tankCapacity} 隻`;
+        }
+
+        function toggleModal(modalId) {
+            const el = document.getElementById(modalId);
+            el.classList.toggle('hidden');
+            if (modalId === 'book-modal') renderBookGrid();
+            if (modalId === 'task-modal') renderTaskList();
+            if (modalId === 'breed-modal') renderBreedModal();
+        }
+
+        function setAquariumTheme(themeKey) {
+            GameState.theme = themeKey;
+            showToast(`已成功切換主題背景！`, "🎨");
+            toggleModal('theme-modal');
+            GameState.save();
+        }
+
+        function showToast(text, icon = "✨") {
+            const toast = document.getElementById('toast-notify');
+            document.getElementById('toast-text').innerText = text;
+            document.getElementById('toast-icon').innerText = icon;
+            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+            }, 2500);
+        }
+
+        function showFishPopover(fish, screenX, screenY) {
+            const pop = document.getElementById('fish-popover');
+            pop.style.left = `${screenX}px`; pop.style.top = `${screenY}px`;
+            document.getElementById('pop-fish-name').innerText = fish.info.name;
+            document.getElementById('pop-fish-rarity').innerText = fish.info.rarity;
+            document.getElementById('pop-fish-stage').innerText = fish.stage === 1 ? "幼魚" : (fish.stage === 2 ? "成長期" : "成魚");
+            document.getElementById('pop-fish-hunger').innerText = fish.hunger > 60 ? "飽足" : "飢餓";
+            document.getElementById('pop-fish-timer').innerText = `${Math.ceil(fish.coinTimer)} 秒`;
+            pop.classList.remove('hidden');
+        }
+
+        function hideFishPopover() { document.getElementById('fish-popover').classList.add('hidden'); }
+
+        let currentShopTab = 'fish';
+        function openShop(tab = 'fish') { switchShopTab(tab); toggleModal('shop-modal'); }
+        function switchShopTab(tab) {
+            currentShopTab = tab;
+            ['fish', 'decor'].forEach(t => {
+                document.getElementById(`shop-tab-${t}`).className = t === tab ? "px-5 py-2 font-bold rounded-t-lg bg-pink-500 text-white" : "px-5 py-2 font-bold rounded-t-lg bg-blue-900 text-cyan-200";
+            });
+            renderShopItems();
+        }
+
+        function renderShopItems() {
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = "";
+            if (currentShopTab === 'fish') {
+                FISH_SPECIES.filter(f => !f.gachaOnly).forEach(f => {
+                    const card = document.createElement('div');
+                    card.className = "bg-blue-950/70 border-2 border-cyan-400/40 rounded-2xl p-3 flex flex-col justify-between items-center text-center hover:border-yellow-300 transition";
+                    card.innerHTML = `
+                        <div class="w-16 h-16 rounded-full bg-blue-900/80 flex items-center justify-center text-3xl mb-2 border border-cyan-400/30">🐟</div>
+                        <h4 class="font-bold text-yellow-300 text-sm">${f.name}</h4>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-pink-500/40 text-pink-200 my-1">${f.rarity}</span>
+                        <p class="text-[11px] text-cyan-100 mb-2 line-clamp-2">${f.desc}</p>
+                        <button onclick="buyFish(${f.id})" class="btn-retro btn-pink w-full py-1 text-xs">${f.gemPrice ? `💎 ${f.gemPrice}` : `💰 ${f.price}`} 購買</button>
+                    `;
+                    container.appendChild(card);
+                });
+            } else {
+                DECOR_ITEMS.forEach(d => {
+                    const card = document.createElement('div');
+                    card.className = "bg-blue-950/70 border-2 border-cyan-400/40 rounded-2xl p-3 flex flex-col justify-between items-center text-center hover:border-yellow-300 transition";
+                    card.innerHTML = `
+                        <div class="w-16 h-16 rounded-full bg-blue-900/80 flex items-center justify-center text-3xl mb-2 border border-cyan-400/30">🪸</div>
+                        <h4 class="font-bold text-yellow-300 text-sm">${d.name}</h4>
+                        <button onclick="buyDecor('${d.id}')" class="btn-retro btn-green w-full py-1 text-xs mt-3">💰 ${d.price} 購買放置</button>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        function buyFish(speciesId) {
+            const spec = FISH_SPECIES.find(s => s.id === speciesId);
+            if (GameState.fishes.length >= GameState.tankCapacity) { showToast("魚缸容量已滿！", "⚠️"); return; }
+            if (spec.gemPrice) {
+                if (GameState.gems < spec.gemPrice) { showToast("鑽石不足！", "❌"); return; }
+                GameState.gems -= spec.gemPrice;
+            } else {
+                if (GameState.coins < spec.price) { showToast("金幣不足！", "❌"); return; }
+                GameState.coins -= spec.price;
+            }
+            GameState.fishes.push(new Fish(speciesId));
+            if (!GameState.unlockedBook.includes(speciesId)) GameState.unlockedBook.push(speciesId);
+            GameState.checkTaskProgress('buy', 1);
+            AudioFX.playBuy();
+            showToast(`購買了 1 隻 ${spec.name}！`, "🎉");
+            updateHUD(); GameState.save();
+        }
+
+        function buyDecor(decorId) {
+            const dec = DECOR_ITEMS.find(d => d.id === decorId);
+            if (GameState.coins < dec.price) { showToast("金幣不足！", "❌"); return; }
+            GameState.coins -= dec.price;
+            GameState.decors.push(new Decor(decorId, Math.random() * (width - 150) + 50));
+            AudioFX.playBuy();
+            showToast(`購買裝飾：${dec.name}！`, "🪸");
+            updateHUD(); GameState.save();
+        }
+
+        function upgradeTankCapacity() {
+            const cost = GameState.tankCapacity * 150;
+            if (GameState.coins < cost) { showToast("金幣不足，無法擴建！", "❌"); return; }
+            GameState.coins -= cost;
+            GameState.tankCapacity += 2;
+            AudioFX.playBuy();
+            showToast(`擴建成功！上限解鎖至 ${GameState.tankCapacity} 隻`, "🏰");
+            updateHUD(); toggleModal('tank-modal'); GameState.save();
+        }
+
+        function renderBookGrid() {
+            const container = document.getElementById('book-items-container');
+            container.innerHTML = "";
+            FISH_SPECIES.forEach(f => {
+                const isUnlocked = GameState.unlockedBook.includes(f.id);
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border-2 flex flex-col items-center text-center ${isUnlocked ? 'bg-blue-950/80 border-cyan-400 text-white' : 'bg-slate-900/60 border-slate-700 text-slate-500 opacity-60'}`;
+                card.innerHTML = `
+                    <div class="text-3xl mb-1">${isUnlocked ? '🐟' : '❓'}</div>
+                    <div class="font-bold text-xs ${isUnlocked ? 'text-yellow-300' : 'text-slate-400'}">${isUnlocked ? f.name : '未解鎖'}</div>
+                    <div class="text-[10px] mt-1 px-1.5 py-0.5 rounded bg-blue-900/50">${f.rarity}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderTaskList() {
+            const container = document.getElementById('task-list-container');
+            container.innerHTML = "";
+            let hasUnclaimed = false;
+            GameState.tasks.forEach(t => {
+                if (t.current >= t.target && !t.done) hasUnclaimed = true;
+                const item = document.createElement('div');
+                item.className = "bg-blue-950/70 border border-cyan-400/30 rounded-2xl p-3 flex justify-between items-center";
+                item.innerHTML = `
+                    <div>
+                        <h4 class="font-bold text-sm text-yellow-300">${t.title}</h4>
+                        <p class="text-xs text-cyan-200">進度：${t.current} / ${t.target}</p>
+                    </div>
+                    <div>
+                        ${t.done 
+                            ? `<span class="text-xs text-emerald-400 font-bold">✓ 已領取</span>`
+                            : `<button onclick="claimTask(${t.id})" class="${t.current >= t.target ? 'btn-retro btn-green' : 'opacity-50 cursor-not-allowed bg-slate-700 text-slate-300'} px-3 py-1 text-xs">領取 +${t.rewardCoins}💰</button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+            if (!hasUnclaimed) document.getElementById('task-badge').classList.add('hidden');
+        }
+
+        function claimTask(taskId) {
+            const t = GameState.tasks.find(x => x.id === taskId);
+            if (t && t.current >= t.target && !t.done) {
+                t.done = true; GameState.coins += t.rewardCoins; GameState.addXP(t.rewardXP);
+                AudioFX.playCoin(); showToast(`任務完成！獲得 ${t.rewardCoins} 金幣`, "📜");
+                renderTaskList(); updateHUD(); GameState.save();
+            }
+        }
+
+        function claimDailyReward() {
+            const today = new Date().toDateString();
+            if (GameState.lastDailyClaim === today) { showToast("今天已經簽到領過獎勵囉！", "⚠️"); toggleModal('daily-modal'); return; }
+            GameState.lastDailyClaim = today; GameState.coins += 500; GameState.gems += 5;
+            AudioFX.playFanfare(); showToast("簽到成功！獲得 金幣 +500, 鑽石 +5！", "🎁");
+            updateHUD(); toggleModal('daily-modal'); GameState.save();
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            GameState.load();
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
